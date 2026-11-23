@@ -1,51 +1,51 @@
 # QDevice Polar H10
 
-Native **C++20 / WinRT BLE** QDevice plugin (`0.10.x` API) for **Qualisys Track Manager (QTM)** to stream **Polar H10** heart rate, R-R intervals, skin contact, and optional **130 Hz ECG** directly into QTM without any paid Polar SDK.
+[![Technosport amU](https://img.shields.io/badge/Technosport-amU%20%7C%20ISM-002D62?style=flat-square)](https://github.com/Technosport)
+[![QDevice](https://img.shields.io/badge/QTM-QDevice%200.10-009EE2?style=flat-square)](../../releases)
+[![Windows](https://img.shields.io/badge/Windows-x64%20BLE-26A669?style=flat-square)](#)
 
-## Features
+> **Plugin QDevice C++20 / WinRT BLE intégrant les ceintures Polar H10 (fréquence cardiaque, intervalles RR, contact et ECG 130 Hz optionnel) en temps réel dans Qualisys Track Manager (QTM), sans SDK Polar payant.**  
+> *Développé au sein du **Technosport / ISM** (UMR 7287 CNRS — Aix-Marseille Université) • [**Releases**](../../releases)*
 
-- **Direct Windows BLE (WinRT GATT)** on dedicated MTA worker threads (no conflict with QTM's STA UI thread)
-- **Standard Heart Rate Service (`0x180D` / `0x2A37`)**:
-  - `Heart Rate` (`bpm`, 1 Hz)
-  - `RR Interval Ms` (`ms`, 1 Hz)
-  - `Sensor Contact` (`0` / `1`, 1 Hz)
-- **Optional 130 Hz ECG** via Polar PMD (`FB005C80-...` with `Indicate` on Control Point):
-  - `ECG` (`µV`, 130 Hz)
-- **Multi-strap support** + `Device Filter` (filter by Polar ID such as `0DA808` or Bluetooth MAC address)
-- **Validated** against Qualisys `qdevice_validator.exe` (`23 run, 19 passed, 4 skipped`) and live QTM 2026.2
+---
 
-## Installation (Windows 10/11 x64)
+## 🚀 Démarrage
 
-1. Close **Qualisys Track Manager (QTM)**.
-2. Download **`QDevice-Polar-H10-Setup-v0.2.0.exe`** from [Releases](https://github.com/Technosport/QDevice-polar-h10/releases) and run it (installs `qdevice_polar_h10.dll` and `qdevice_polar_h10.png` into `C:\Program Files\Qualisys\Qualisys Track Manager\Input_Devices\`).
-   - *(Alternatively, download the `.zip` and copy both files manually into `Input_Devices\`.)*
-3. Open **QTM > Project Options > Input Devices > Add Device...** and enable **Polar H10 Heart Rate Monitor**.
+1. Fermer **Qualisys Track Manager (QTM)**.
+2. Télécharger et exécuter **`QDevice-Polar-H10-Setup-v0.2.0.exe`** depuis les **[Releases](../../releases)** *(installe `qdevice_polar_h10.dll` et `qdevice_polar_h10.png` dans `C:\Program Files\Qualisys\Qualisys Track Manager\Input_Devices\`)*.
+3. Ouvrir **QTM > Project Options > Input Devices > Add Device...** et activer **Polar H10 Heart Rate Monitor**.
+4. Porter la ceinture Polar H10, puis dans **Generics > Polar H10 Heart Rate Monitor** cliquer sur **Locate Devices** et **OK**.
 
-## Usage in QTM
+---
 
-1. Wear your Polar H10 strap so it starts advertising BLE.
-2. In **Project Options > Input Devices > Generics > Polar H10 Heart Rate Monitor**:
-   - Optionally enable **`Enable ECG`** (for 130 Hz ECG) or set **`Device Filter`** (e.g. your strap ID).
-   - Click **`Locate Devices`**, then **`Synchronize Settings`** if you changed options, then **`OK`**.
-3. Start **Preview** (`Ctrl+N`) or **Record** and open **View > Data Info > Analog data**.
+## 🛠️ Fonctionnalités & Contenu
 
-## Building from Source
+| Canal / Fichier | Rôle / Description |
+| :--- | :--- |
+| **`Heart Rate`** (`1 Hz`, `bpm`) | Fréquence cardiaque instantanée via GATT `0x180D` / `0x2A37` |
+| **`RR Interval Ms`** (`1 Hz`, `ms`) | Dernier intervalle R-R mesuré par la ceinture |
+| **`Sensor Contact`** (`1 Hz`, `0 / 1`) | État du contact peau des électrodes |
+| **`ECG`** (`130 Hz`, `µV`, optionnel) | Flux ECG brut via Polar PMD (`Enable ECG`) |
+| **`Device Filter`** | Filtre optionnel par ID Polar (ex. `0DA808`) ou adresse MAC |
+| **`src/PolarBleClientWinrt.cpp`** | Client BLE WinRT sur threads MTA dédiés |
+| **`src/QDevicePolarPlugin.cpp`** | Point d'entrée QDevice API `0.10.6` |
 
-### Prerequisites
-- Windows 10/11 x64
-- Visual Studio 2022 / Build Tools (MSVC C++20 + Windows 10/11 SDK with `windowsapp.lib`)
-- CMake >= 3.20
-- **Qualisys QDevice SDK 0.10.x** (download from your [Qualisys account](https://www.qualisys.com/downloads/) — *not included in this repository per Qualisys SDK license*)
+<details>
+<summary><b>Compilation depuis les sources (développeurs)</b></summary>
 
-### Build
+> [!NOTE]
+> Le **Qualisys QDevice SDK 0.10.x** n'est pas redistribué dans ce dépôt ; téléchargez-le depuis votre compte Qualisys.
+
 ```powershell
-cmake -S . -B build -A x64 -DQDEVICE_SDK_DIR="C:\path\to\qdevice_sdk"
+cmake -S . -B build -A x64 -DQDEVICE_SDK_DIR="C:\chemin\vers\qdevice_sdk"
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-### Build Installer
-Requires [Inno Setup 6](https://jrsoftware.org/isinfo.php):
+Pour générer l'installeur `.exe` avec Inno Setup 6 :
+
 ```powershell
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" .\installer\qdevice_polar_h10.iss
 ```
+
+</details>
