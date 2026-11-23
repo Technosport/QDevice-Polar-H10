@@ -29,23 +29,3 @@
 | **`Device Filter`** | Filtre optionnel par ID Polar (ex. `0DA808`) ou adresse MAC |
 | **`src/PolarBleClientWinrt.cpp`** | Client BLE WinRT sur threads MTA dédiés |
 | **`src/QDevicePolarPlugin.cpp`** | Point d'entrée QDevice API `0.10.6` |
-
-<details>
-<summary><b>Compilation depuis les sources (développeurs)</b></summary>
-
-> [!NOTE]
-> Le **Qualisys QDevice SDK 0.10.x** n'est pas redistribué dans ce dépôt ; téléchargez-le depuis votre compte Qualisys.
-
-```powershell
-cmake -S . -B build -A x64 -DQDEVICE_SDK_DIR="C:\chemin\vers\qdevice_sdk"
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-```
-
-Pour générer l'installeur `.exe` avec Inno Setup 6 :
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" .\installer\qdevice_polar_h10.iss
-```
-
-</details>
