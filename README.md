@@ -27,5 +27,3 @@
 | **`Sensor Contact`** (`1 Hz`, `0 / 1`) | État du contact peau des électrodes |
 | **`ECG`** (`130 Hz`, `µV`, optionnel) | Flux ECG brut via Polar PMD (`Enable ECG`) |
 | **`Device Filter`** | Filtre optionnel par ID Polar (ex. `0DA808`) ou adresse MAC |
-| **`src/PolarBleClientWinrt.cpp`** | Client BLE WinRT sur threads MTA dédiés |
-| **`src/QDevicePolarPlugin.cpp`** | Point d'entrée QDevice API `0.10.6` |
