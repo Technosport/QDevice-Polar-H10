@@ -18,6 +18,7 @@ void PolarSampleBuffer::pushHeartRate(const HeartRatePacket& pkt) {
 void PolarSampleBuffer::pushEcg(const PmdEcgPacket& pkt) {
     if (!pkt.valid) return;
     std::lock_guard<std::mutex> lock(mutex_);
+    has_received_ecg_ = true;
     for (float s : pkt.samples_uv) {
         ecg_fifo_.push_back(s);
         latest_ecg_uv_ = s;
@@ -49,6 +50,11 @@ float PolarSampleBuffer::latestRrMs() const {
 float PolarSampleBuffer::latestContact() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return latest_contact_;
+}
+
+bool PolarSampleBuffer::hasReceivedEcg() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return has_received_ecg_;
 }
 
 std::vector<float> PolarSampleBuffer::popEcgSamples(size_t count) {

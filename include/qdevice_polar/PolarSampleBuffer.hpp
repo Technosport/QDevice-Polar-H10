@@ -21,6 +21,7 @@ public:
     float latestBpm() const;
     float latestRrMs() const;
     float latestContact() const;
+    bool hasReceivedEcg() const;
 
     /// Pops `count` ECG samples in microvolts. Waits until `ecg_prebuffer_samples_`
     /// have arrived on initial start before draining, then holds latest on underrun.
@@ -30,6 +31,7 @@ private:
     mutable std::mutex mutex_;
     size_t ecg_prebuffer_samples_ = 10;
     bool ecg_primed_ = false;
+    bool has_received_ecg_ = false;
     float latest_bpm_ = 0.0f;
     float latest_rr_ms_ = 0.0f;
     float latest_contact_ = 0.0f;

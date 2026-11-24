@@ -202,6 +202,12 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
                         const uint8_t start_ecg_cmd[] = { 0x02, 0x00, 0x00, 0x01, 0x82, 0x00, 0x01, 0x01, 0x0E, 0x00 };
                         writer.WriteBytes(start_ecg_cmd);
                         impl_->pmd_ctrl_char.WriteValueAsync(writer.DetachBuffer(), GattWriteOption::WriteWithResponse).get();
+
+                        // Wait until the first ECG packet arrives (up to 16 s) so QTM's t=0.00 s
+                        // recording starts with live ECG data instead of leading zeros.
+                        for (int wait_ms = 0; wait_ms < 16000 && !buffer_.hasReceivedEcg(); wait_ms += 50) {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                        }
                     }
                 }
             }
