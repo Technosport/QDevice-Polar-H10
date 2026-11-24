@@ -12,7 +12,7 @@ namespace qdevice_polar {
 
 class PolarSampleBuffer {
 public:
-    explicit PolarSampleBuffer(size_t ecg_prebuffer_samples = 10);
+    explicit PolarSampleBuffer(size_t ecg_prebuffer_samples = 1);
 
     void pushHeartRate(const HeartRatePacket& pkt);
     void pushEcg(const PmdEcgPacket& pkt);

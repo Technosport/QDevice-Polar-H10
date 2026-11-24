@@ -33,10 +33,6 @@ void PolarSampleBuffer::pushEcg(const PmdEcgPacket& pkt) {
 void PolarSampleBuffer::clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     ecg_primed_ = false;
-    latest_bpm_ = 0.0f;
-    latest_rr_ms_ = 0.0f;
-    latest_contact_ = 0.0f;
-    latest_ecg_uv_ = 0.0f;
     ecg_fifo_.clear();
 }
 

@@ -20,7 +20,7 @@ using clock_t_qd = std::chrono::steady_clock;
 constexpr const char* INTEGRATION_NAME    = "Polar H10 Heart Rate Monitor";
 constexpr const char* INTEGRATION_DESC    = "BLE GATT integration for Polar H10 (BPM, RR Interval, Contact, optional 130 Hz ECG)";
 constexpr const char* INTEGRATION_URL     = "https://www.polar.com/en/sensors/h10-heart-rate-sensor";
-constexpr const char* INTEGRATION_VERSION = "0.2.1";
+constexpr const char* INTEGRATION_VERSION = "0.2.2";
 
 struct ManagedPolarDevice {
     qdevice_polar::DiscoveredPolarDevice info;
@@ -160,6 +160,7 @@ qd_call_status qd_get_configuration(struct qd_configuration* configuration) {
         st.device_filter, "", "");
 
     const size_t ch_count = st.enable_ecg ? 4 : 3;
+    const float board_rate_hz = st.enable_ecg ? 130.0f : 1.0f;
 
     for (size_t d = 0; d < st.discovered.size(); ++d) {
         const auto& dev = st.discovered[d];
@@ -172,15 +173,15 @@ qd_call_status qd_get_configuration(struct qd_configuration* configuration) {
             "Device Name", true, qd_property_type_string_utf8, dev.name, dev.name, "");
 
         configuration->devices.data[d].channels.data[0] = QDevice::Utilities::create_channel(
-            "Heart Rate", qd_sample_encoding_float32, qd_channel_unit_beats_per_minute, 1.0f);
+            "Heart Rate", qd_sample_encoding_float32, qd_channel_unit_beats_per_minute, board_rate_hz);
         configuration->devices.data[d].channels.data[1] = QDevice::Utilities::create_channel(
-            "RR Interval Ms", qd_sample_encoding_float32, qd_channel_unit_none, 1.0f);
+            "RR Interval Ms", qd_sample_encoding_float32, qd_channel_unit_none, board_rate_hz);
         configuration->devices.data[d].channels.data[2] = QDevice::Utilities::create_channel(
-            "Sensor Contact", qd_sample_encoding_float32, qd_channel_unit_none, 1.0f);
+            "Sensor Contact", qd_sample_encoding_float32, qd_channel_unit_none, board_rate_hz);
 
         if (st.enable_ecg) {
             configuration->devices.data[d].channels.data[3] = QDevice::Utilities::create_channel(
-                "ECG", qd_sample_encoding_float32, qd_channel_unit_microvolts, 130.0f);
+                "ECG", qd_sample_encoding_float32, qd_channel_unit_microvolts, board_rate_hz);
         }
     }
 
@@ -307,49 +308,43 @@ qd_call_status qd_read_samples(qd_sample_push_fn callback) {
     }
 
     const double elapsed_sec = std::chrono::duration<double>(effective_now - st.stream_start_time).count();
-    const auto hr_target = static_cast<std::uint64_t>(std::max(0.0, elapsed_sec * 1.0));
-    const auto ecg_target = st.enable_ecg
-        ? static_cast<std::uint64_t>(std::max(0.0, elapsed_sec * 130.0))
-        : 0;
+    const double board_rate_hz = st.enable_ecg ? 130.0 : 1.0;
+    const auto target_samples = static_cast<std::uint64_t>(std::max(0.0, elapsed_sec * board_rate_hz));
 
-    size_t hr_count = (hr_target > st.hr_samples_read)
-        ? static_cast<size_t>(hr_target - st.hr_samples_read)
+    size_t count = (target_samples > st.hr_samples_read)
+        ? static_cast<size_t>(target_samples - st.hr_samples_read)
         : 0;
-    if (hr_count == 0 && st.state != qd_state_streaming && st.stream_stop_time.has_value() && st.hr_samples_read == 0) {
-        hr_count = 1;
+    if (count == 0 && st.state != qd_state_streaming && st.stream_stop_time.has_value() && st.hr_samples_read == 0) {
+        count = 1;
     }
-    const size_t ecg_count = (st.enable_ecg && ecg_target > st.ecg_samples_read)
-        ? static_cast<size_t>(ecg_target - st.ecg_samples_read)
-        : 0;
 
-    for (size_t d = 0; d < st.connected_devices.size(); ++d) {
-        auto& dev = st.connected_devices[d];
-        const std::string serial = dev.info.address_str.empty()
-            ? ("POLAR-H10-" + std::to_string(d + 1))
-            : dev.info.address_str;
+    if (count > 0) {
+        for (size_t d = 0; d < st.connected_devices.size(); ++d) {
+            auto& dev = st.connected_devices[d];
+            const std::string serial = dev.info.address_str.empty()
+                ? ("POLAR-H10-" + std::to_string(d + 1))
+                : dev.info.address_str;
 
-        if (hr_count > 0) {
-            std::vector<float> bpm_buf(hr_count, dev.client->buffer().latestBpm());
-            std::vector<float> rr_buf(hr_count, dev.client->buffer().latestRrMs());
-            std::vector<float> cnt_buf(hr_count, dev.client->buffer().latestContact());
+            std::vector<float> bpm_buf(count, dev.client->buffer().latestBpm());
+            std::vector<float> rr_buf(count, dev.client->buffer().latestRrMs());
+            std::vector<float> cnt_buf(count, dev.client->buffer().latestContact());
 
             callback(serial.c_str(), "Heart Rate",
-                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(bpm_buf.data()), hr_count });
+                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(bpm_buf.data()), count });
             callback(serial.c_str(), "RR Interval Ms",
-                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(rr_buf.data()), hr_count });
+                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(rr_buf.data()), count });
             callback(serial.c_str(), "Sensor Contact",
-                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(cnt_buf.data()), hr_count });
-        }
+                     { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(cnt_buf.data()), count });
 
-        if (ecg_count > 0) {
-            auto ecg_buf = dev.client->buffer().popEcgSamples(ecg_count);
-            callback(serial.c_str(), "ECG",
-                     { st.ecg_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(ecg_buf.data()), ecg_count });
+            if (st.enable_ecg) {
+                auto ecg_buf = dev.client->buffer().popEcgSamples(count);
+                callback(serial.c_str(), "ECG",
+                         { st.hr_samples_read, qd_sample_encoding_float32, reinterpret_cast<uint8_t*>(ecg_buf.data()), count });
+            }
         }
+        st.hr_samples_read += count;
+        st.ecg_samples_read = st.hr_samples_read;
     }
-
-    st.hr_samples_read += hr_count;
-    st.ecg_samples_read += ecg_count;
 
     if (st.state != qd_state_streaming) {
         st.stream_stop_time.reset();
