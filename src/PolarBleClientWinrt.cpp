@@ -192,13 +192,22 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
 }
 
 void PolarBleClient::disconnect() {
+    if (impl_->pmd_ctrl_char) {
+        // Send Polar PMD Stop ECG ([0x03=Stop, 0x00=ECG]) so the H10 resets its PMD state
+        // cleanly instead of holding a stale stream for ~20-25s on the next connection.
+        try {
+            DataWriter writer;
+            const uint8_t stop_ecg_cmd[] = { 0x03, 0x00 };
+            writer.WriteBytes(stop_ecg_cmd);
+            impl_->pmd_ctrl_char.WriteValueAsync(
+                writer.DetachBuffer(), GattWriteOption::WriteWithResponse).get();
+        } catch (...) {}
+        try { impl_->pmd_ctrl_char.ValueChanged(impl_->pmd_ctrl_token); } catch (...) {}
+        impl_->pmd_ctrl_char = nullptr;
+    }
     if (impl_->hr_char) {
         try { impl_->hr_char.ValueChanged(impl_->hr_token); } catch (...) {}
         impl_->hr_char = nullptr;
-    }
-    if (impl_->pmd_ctrl_char) {
-        try { impl_->pmd_ctrl_char.ValueChanged(impl_->pmd_ctrl_token); } catch (...) {}
-        impl_->pmd_ctrl_char = nullptr;
     }
     if (impl_->pmd_data_char) {
         try { impl_->pmd_data_char.ValueChanged(impl_->pmd_token); } catch (...) {}
