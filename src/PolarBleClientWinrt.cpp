@@ -123,6 +123,11 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
             if (!impl_->device) return false;
 
             try {
+                impl_->device.RequestPreferredConnectionParameters(
+                    BluetoothLEPreferredConnectionParameters::ThroughputOptimized());
+            } catch (...) {}
+
+            try {
                 impl_->session = GattSession::FromDeviceIdAsync(impl_->device.BluetoothDeviceId()).get();
                 if (impl_->session) {
                     impl_->session.MaintainConnection(true);
