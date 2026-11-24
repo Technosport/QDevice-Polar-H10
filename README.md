@@ -12,7 +12,7 @@
 ## 🚀 Démarrage
 
 1. Fermer **Qualisys Track Manager (QTM)**.
-2. Télécharger et exécuter **`QDevice-Polar-H10-Setup-v0.2.0.exe`** depuis les **[Releases](../../releases)**.
+2. Télécharger et exécuter **`QDevice-Polar-H10-Setup-v0.2.1.exe`** depuis les **[Releases](../../releases)**.
 3. Ouvrir **QTM > Project Options > Input Devices > Add Device...** et activer **Polar H10 Heart Rate Monitor**.
 4. Porter la ceinture Polar H10, puis dans **Generics > Polar H10 Heart Rate Monitor** cliquer sur **Locate Devices** et **OK**.
 

@@ -20,7 +20,7 @@ using clock_t_qd = std::chrono::steady_clock;
 constexpr const char* INTEGRATION_NAME    = "Polar H10 Heart Rate Monitor";
 constexpr const char* INTEGRATION_DESC    = "BLE GATT integration for Polar H10 (BPM, RR Interval, Contact, optional 130 Hz ECG)";
 constexpr const char* INTEGRATION_URL     = "https://www.polar.com/en/sensors/h10-heart-rate-sensor";
-constexpr const char* INTEGRATION_VERSION = "0.2.0";
+constexpr const char* INTEGRATION_VERSION = "0.2.1";
 
 struct ManagedPolarDevice {
     qdevice_polar::DiscoveredPolarDevice info;
@@ -59,11 +59,18 @@ qd_call_status errorStatus(const std::string& msg) {
     return { qd_call_status_type_error, st.last_error.c_str() };
 }
 
-qd_call_status QD_STDCALL actionLocateDevices(const struct qd_configuration* /*config*/) {
+qd_call_status QD_STDCALL actionLocateDevices(const struct qd_configuration* config) {
     auto& st = getState();
     std::lock_guard<std::mutex> lock(st.mutex);
     if (st.state != qd_state_disconnected) {
         return errorStatus("Disconnect before locating devices");
+    }
+    if (config) {
+        try {
+            QDevice::Utilities::try_assign_property_value("Discovery Timeout Ms", config->properties, st.discovery_timeout_ms);
+            QDevice::Utilities::try_assign_property_value("Enable ECG", config->properties, st.enable_ecg);
+            QDevice::Utilities::try_assign_property_value("Device Filter", config->properties, st.device_filter);
+        } catch (...) {}
     }
     st.discovered = qdevice_polar::PolarBleClient::discoverAll(
         static_cast<uint32_t>(st.discovery_timeout_ms), st.device_filter);
