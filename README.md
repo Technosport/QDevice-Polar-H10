@@ -4,26 +4,26 @@
 [![QDevice](https://img.shields.io/badge/QTM-QDevice%200.10-009EE2?style=flat-square)](../../releases)
 [![Windows](https://img.shields.io/badge/Windows-x64%20BLE-26A669?style=flat-square)](#)
 
-> **Plugin d'intégration des ceintures Polar H10 (fréquence cardiaque, intervalles RR, contact et ECG 130 Hz optionnel) en temps réel dans Qualisys Track Manager.**  
-> *Développé au sein du **Technosport / ISM** (UMR 7287 CNRS — Aix-Marseille Université) • [**Releases**](../../releases)*
+> **Qualisys Track Manager integration plugin for Polar H10 sensors.**  
+> *Developed at **Technosport / ISM** (UMR 7287 CNRS — Aix-Marseille Université) • [**Releases**](../../releases)*
 
 ---
 
-## 🚀 Démarrage
+## 🚀 Getting Started
 
-1. Fermer **Qualisys Track Manager (QTM)**.
-2. Télécharger et exécuter **`QDevice-Polar-H10-Setup-v0.2.1.exe`** depuis les **[Releases](../../releases)**.
-3. Ouvrir **QTM > Project Options > Input Devices > Add Device...** et activer **Polar H10 Heart Rate Monitor**.
-4. Porter la ceinture Polar H10, puis dans **Generics > Polar H10 Heart Rate Monitor** cliquer sur **Locate Devices** et **OK**.
+1. Close **Qualisys Track Manager (QTM)**.
+2. Download and run the latest installer from **[Releases](../../releases)**.
+3. Open **QTM > Project Options > Input Devices > Add Device...** and enable **Polar H10 Heart Rate Monitor**.
+4. Put on the Polar H10 strap, then go to **Generics > Polar H10 Heart Rate Monitor**, click **Locate Devices**, and click **OK**.
 
 ---
 
-## 🛠️ Fonctionnalités & Contenu
+## 🛠️ Channels & Options
 
-| Canal / Fichier | Rôle / Description |
+| Channel / Option | Description |
 | :--- | :--- |
-| **`Heart Rate`** (`1 Hz`, `bpm`) | Fréquence cardiaque instantanée via GATT `0x180D` / `0x2A37` |
-| **`RR Interval Ms`** (`1 Hz`, `ms`) | Dernier intervalle R-R mesuré par la ceinture |
-| **`Sensor Contact`** (`1 Hz`, `0 / 1`) | État du contact peau des électrodes |
-| **`ECG`** (`130 Hz`, `µV`, optionnel) | Flux ECG brut via Polar PMD (`Enable ECG`) |
-| **`Device Filter`** | Filtre optionnel par ID Polar (ex. `0DA808`) ou adresse MAC |
+| **`Heart Rate`** (`1 Hz`, `bpm`) | Instantaneous heart rate (BLE GATT `0x180D` / `0x2A37`) |
+| **`RR Interval Ms`** (`1 Hz`, `ms`) | Latest R-R interval |
+| **`Sensor Contact`** (`1 Hz`, `0 / 1`) | Skin electrode contact status |
+| **`ECG`** (`130 Hz`, `µV`, optional) | Raw ECG stream via Polar PMD (`Enable ECG`) |
+| **`Device Filter`** | Optional filter by Polar ID or MAC address |
