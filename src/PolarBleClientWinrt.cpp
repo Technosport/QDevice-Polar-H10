@@ -56,6 +56,7 @@ constexpr guid kPmdDataUuid   { 0xFB005C82, 0x02E7, 0xF387, { 0x1C, 0xAD, 0x8A, 
 
 struct PolarBleClient::Impl {
     BluetoothLEDevice device{ nullptr };
+    BluetoothLEPreferredConnectionParametersRequest conn_params_req{ nullptr };
     GattSession session{ nullptr };
     GattDeviceService hr_service{ nullptr };
     GattDeviceService pmd_service{ nullptr };
@@ -123,7 +124,9 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
             if (!impl_->device) return false;
 
             try {
-                impl_->device.RequestPreferredConnectionParameters(
+                // Keep the request object alive for the connection lifetime; destroying it
+                // immediately reverts Windows BLE connection parameters back to default.
+                impl_->conn_params_req = impl_->device.RequestPreferredConnectionParameters(
                     BluetoothLEPreferredConnectionParameters::ThroughputOptimized());
             } catch (...) {}
 
@@ -258,6 +261,10 @@ void PolarBleClient::disconnect() {
     if (impl_->session) {
         try { impl_->session.Close(); } catch (...) {}
         impl_->session = nullptr;
+    }
+    if (impl_->conn_params_req) {
+        try { impl_->conn_params_req.Close(); } catch (...) {}
+        impl_->conn_params_req = nullptr;
     }
     if (impl_->device) {
         impl_->device.Close();
