@@ -20,7 +20,7 @@ using clock_t_qd = std::chrono::steady_clock;
 constexpr const char* INTEGRATION_NAME    = "Polar H10 Heart Rate Monitor";
 constexpr const char* INTEGRATION_DESC    = "BLE GATT integration for Polar H10 (BPM, RR Interval, Contact, optional 130 Hz ECG)";
 constexpr const char* INTEGRATION_URL     = "https://www.polar.com/en/sensors/h10-heart-rate-sensor";
-constexpr const char* INTEGRATION_VERSION = "0.2.7";
+constexpr const char* INTEGRATION_VERSION = "0.2.8";
 
 struct ManagedPolarDevice {
     qdevice_polar::DiscoveredPolarDevice info;

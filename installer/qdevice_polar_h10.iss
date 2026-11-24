@@ -1,5 +1,5 @@
 #define MyAppName "QDevice Polar H10 for QTM"
-#define MyAppVersion "0.2.7"
+#define MyAppVersion "0.2.8"
 #define MyAppPublisher "Technosport"
 #define MyAppURL "https://github.com/Technosport/QDevice-polar-h10"
 
