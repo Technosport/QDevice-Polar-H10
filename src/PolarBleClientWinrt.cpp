@@ -56,6 +56,9 @@ constexpr guid kPmdDataUuid   { 0xFB005C82, 0x02E7, 0xF387, { 0x1C, 0xAD, 0x8A, 
 
 struct PolarBleClient::Impl {
     BluetoothLEDevice device{ nullptr };
+    GattSession session{ nullptr };
+    GattDeviceService hr_service{ nullptr };
+    GattDeviceService pmd_service{ nullptr };
     GattCharacteristic hr_char{ nullptr };
     GattCharacteristic pmd_ctrl_char{ nullptr };
     GattCharacteristic pmd_data_char{ nullptr };
@@ -119,6 +122,13 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
             impl_->device = BluetoothLEDevice::FromBluetoothAddressAsync(bluetooth_address).get();
             if (!impl_->device) return false;
 
+            try {
+                impl_->session = GattSession::FromDeviceIdAsync(impl_->device.BluetoothDeviceId()).get();
+                if (impl_->session) {
+                    impl_->session.MaintainConnection(true);
+                }
+            } catch (...) {}
+
             // 1. Standard Heart Rate Service (0x180D) -> 0x2A37
             auto hr_services = impl_->device.GetGattServicesForUuidAsync(
                 BluetoothUuidHelper::FromShortId(0x180D), BluetoothCacheMode::Uncached).get();
@@ -126,7 +136,8 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
                 disconnect();
                 return false;
             }
-            auto hr_chars = hr_services.Services().GetAt(0).GetCharacteristicsForUuidAsync(
+            impl_->hr_service = hr_services.Services().GetAt(0);
+            auto hr_chars = impl_->hr_service.GetCharacteristicsForUuidAsync(
                 BluetoothUuidHelper::FromShortId(0x2A37), BluetoothCacheMode::Uncached).get();
             if (hr_chars.Status() != GattCommunicationStatus::Success || hr_chars.Characteristics().Size() == 0) {
                 disconnect();
@@ -149,9 +160,9 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
             if (enable_ecg) {
                 auto pmd_services = impl_->device.GetGattServicesForUuidAsync(kPmdServiceUuid, BluetoothCacheMode::Uncached).get();
                 if (pmd_services.Status() == GattCommunicationStatus::Success && pmd_services.Services().Size() > 0) {
-                    auto svc = pmd_services.Services().GetAt(0);
-                    auto ctrl_res = svc.GetCharacteristicsForUuidAsync(kPmdControlUuid, BluetoothCacheMode::Uncached).get();
-                    auto data_res = svc.GetCharacteristicsForUuidAsync(kPmdDataUuid, BluetoothCacheMode::Uncached).get();
+                    impl_->pmd_service = pmd_services.Services().GetAt(0);
+                    auto ctrl_res = impl_->pmd_service.GetCharacteristicsForUuidAsync(kPmdControlUuid, BluetoothCacheMode::Uncached).get();
+                    auto data_res = impl_->pmd_service.GetCharacteristicsForUuidAsync(kPmdDataUuid, BluetoothCacheMode::Uncached).get();
 
                     if (ctrl_res.Characteristics().Size() > 0 && data_res.Characteristics().Size() > 0) {
                         impl_->pmd_ctrl_char = ctrl_res.Characteristics().GetAt(0);
@@ -172,6 +183,14 @@ bool PolarBleClient::connect(uint64_t bluetooth_address, bool enable_ecg) {
                         });
                         impl_->pmd_data_char.WriteClientCharacteristicConfigurationDescriptorAsync(
                             GattClientCharacteristicConfigurationDescriptorValue::Notify).get();
+
+                        // Clear any stale PMD ECG stream first, then Start ECG @ 130 Hz 14-bit
+                        try {
+                            DataWriter stop_w;
+                            const uint8_t stop_ecg_cmd[] = { 0x03, 0x00 };
+                            stop_w.WriteBytes(stop_ecg_cmd);
+                            impl_->pmd_ctrl_char.WriteValueAsync(stop_w.DetachBuffer(), GattWriteOption::WriteWithResponse).get();
+                        } catch (...) {}
 
                         // Start ECG stream: [0x02=Start, 0x00=ECG, 0x00=SampleRate, 0x01, 0x82, 0x00 (130Hz), 0x01=Resolution, 0x01, 0x0E, 0x00 (14bit)]
                         DataWriter writer;
@@ -210,8 +229,24 @@ void PolarBleClient::disconnect() {
         impl_->hr_char = nullptr;
     }
     if (impl_->pmd_data_char) {
+        try {
+            impl_->pmd_data_char.WriteClientCharacteristicConfigurationDescriptorAsync(
+                GattClientCharacteristicConfigurationDescriptorValue::None).get();
+        } catch (...) {}
         try { impl_->pmd_data_char.ValueChanged(impl_->pmd_token); } catch (...) {}
         impl_->pmd_data_char = nullptr;
+    }
+    if (impl_->pmd_service) {
+        try { impl_->pmd_service.Close(); } catch (...) {}
+        impl_->pmd_service = nullptr;
+    }
+    if (impl_->hr_service) {
+        try { impl_->hr_service.Close(); } catch (...) {}
+        impl_->hr_service = nullptr;
+    }
+    if (impl_->session) {
+        try { impl_->session.Close(); } catch (...) {}
+        impl_->session = nullptr;
     }
     if (impl_->device) {
         impl_->device.Close();
