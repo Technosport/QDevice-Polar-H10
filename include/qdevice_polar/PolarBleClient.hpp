@@ -29,17 +29,32 @@ public:
     static std::vector<DiscoveredPolarDevice> discoverAll(uint32_t timeout_ms = 2500,
                                                           const std::string& filter = "");
 
-    bool connect(uint64_t bluetooth_address, bool enable_ecg);
+    /// Retains a lightweight GattSession(MaintainConnection=true) for `bluetooth_address` across
+    /// QTM qd_disconnect() -> qd_connect() cycles so Windows keeps the BLE link warm (~2s start
+    /// instead of a 30s cold Nordic re-negotiation). Released in qd_deinitialize().
+    static void retainWarmLink(uint64_t bluetooth_address);
+    static void releaseWarmLinks();
+
+    bool connect(uint64_t bluetooth_address,
+                 bool enable_ecg,
+                 bool enable_acc = false,
+                 uint16_t acc_sample_rate_hz = 200,
+                 uint16_t acc_range_g = 8);
     void disconnect();
     bool isConnected() const;
+    bool isEcgActive() const;
+    bool isAccActive() const;
+    uint16_t activeAccRateHz() const;
+    uint16_t negotiatedMtu() const;
+    uint64_t streamRecoveries() const;
+    std::string lastError() const;
 
-    PolarSampleBuffer& buffer() { return buffer_; }
-    const PolarSampleBuffer& buffer() const { return buffer_; }
+    PolarSampleBuffer& buffer();
+    const PolarSampleBuffer& buffer() const;
 
 private:
     struct Impl;
-    std::unique_ptr<Impl> impl_;
-    PolarSampleBuffer buffer_;
+    std::shared_ptr<Impl> impl_;
 };
 
 } // namespace qdevice_polar
